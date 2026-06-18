@@ -1,8 +1,35 @@
-/*
+.stock-search-modal .setting-item {
+	border-top: 0;
+	padding-top: 0;
+}
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+.stock-search-status {
+	color: var(--text-muted);
+	margin: 12px 0;
+	min-height: 1.5em;
+}
 
-If your plugin does not need CSS, delete this file.
+.stock-search-result-list {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
 
-*/
+.stock-search-result-button {
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	color: var(--text-normal);
+	cursor: pointer;
+	padding: 8px 10px;
+	text-align: left;
+	width: 100%;
+}
+
+.stock-search-result-button:hover,
+.stock-search-result-button:focus {
+	background: var(--background-modifier-hover);
+}
