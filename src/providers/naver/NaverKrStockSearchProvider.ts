@@ -5,6 +5,8 @@ import {
 	StockSearchResult,
 } from '../../types';
 import {
+	parseNaverFinanceDirectItemSymbol,
+	parseNaverFinanceItemSummary,
 	parseNaverFinanceMarket,
 	parseNaverFinanceSearchResults,
 } from './naverFinanceParser';
@@ -30,6 +32,13 @@ export class NaverKrStockSearchProvider implements StockSearchProvider {
 		}
 
 		const searchHtml = await this.fetchText(buildSearchUrl(normalizedQuery));
+		const directItemResult =
+			await this.getDirectItemResultIfAvailable(searchHtml);
+
+		if (directItemResult) {
+			return [directItemResult];
+		}
+
 		const parsedResults = parseNaverFinanceSearchResults(searchHtml);
 		const results: StockSearchResult[] = [];
 
@@ -67,6 +76,33 @@ export class NaverKrStockSearchProvider implements StockSearchProvider {
 		return parseNaverFinanceMarket(detailHtml);
 	}
 
+	private async getDirectItemResultIfAvailable(
+		html: string,
+	): Promise<StockSearchResult | null> {
+		const symbol = parseNaverFinanceDirectItemSymbol(html);
+
+		if (!symbol) {
+			return null;
+		}
+
+		const detailHtml = await this.fetchText(buildItemUrl(symbol));
+		const itemSummary = parseNaverFinanceItemSummary(detailHtml);
+
+		if (!itemSummary) {
+			throw new StockSearchParseError(
+				'Unable to parse direct Naver Finance item redirect.',
+			);
+		}
+
+		return {
+			asset_class: KR_STOCK_ASSET_CLASS,
+			asset_name: itemSummary.asset_name,
+			symbol,
+			market: itemSummary.market,
+			source: NAVER_FINANCE_SOURCE,
+		};
+	}
+
 	private async fetchText(url: string): Promise<string> {
 		const response = await requestUrl({
 			url,
@@ -99,6 +135,14 @@ function buildItemUrl(symbol: string): string {
 }
 
 function decodeNaverFinanceResponse(response: RequestUrlResponse): string {
+	try {
+		return new TextDecoder('utf-8', { fatal: true }).decode(
+			response.arrayBuffer,
+		);
+	} catch {
+		// Naver's legacy finance search can still return EUC-KR bytes.
+	}
+
 	try {
 		return new TextDecoder('euc-kr').decode(response.arrayBuffer);
 	} catch {
